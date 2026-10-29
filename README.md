@@ -1,4 +1,4 @@
-# jev35b-mlx
+# autotrust-jev35b-mlx
 
 [autotrust/JEV-35B](https://huggingface.co/autotrust/JEV-35B) on Apple Silicon with [MLX](https://github.com/ml-explore/mlx): System 1 decisions with calibrated probabilities, for text and images, in one forward pass.
 
@@ -20,9 +20,9 @@ Published by [NetProjects](https://netprojects.com) (Internet Projects Ltd). Not
 
 | Hugging Face | size | memory in use | same top answer as the original | probability drift (KL mean / p95) | warm median per decision |
 |---|---|---|---|---|---|
-| [netprojects/JEV-35B-mlx-8bit](https://huggingface.co/netprojects/JEV-35B-mlx-8bit) | 36 GB | 37.7 GB | 228 / 231 | 0.002 / 0.009 | 164 ms |
-| [netprojects/JEV-35B-mlx-4bit-mixed](https://huggingface.co/netprojects/JEV-35B-mlx-4bit-mixed) | 21 GB | 21.6 GB | 225 / 231 | 0.004 / 0.021 | 109 ms |
-| [netprojects/JEV-35B-mlx-3bit-mixed](https://huggingface.co/netprojects/JEV-35B-mlx-3bit-mixed) | 17 GB | 17.6 GB | 224 / 231 | 0.012 / 0.056 | 99 ms |
+| [netprojects/AutoTrust-JEV-35B-mlx-8bit](https://huggingface.co/netprojects/AutoTrust-JEV-35B-mlx-8bit) | 36 GB | 37.7 GB | 228 / 231 | 0.002 / 0.009 | 164 ms |
+| [netprojects/AutoTrust-JEV-35B-mlx-4bit-mixed](https://huggingface.co/netprojects/AutoTrust-JEV-35B-mlx-4bit-mixed) | 21 GB | 21.6 GB | 225 / 231 | 0.004 / 0.021 | 109 ms |
+| [netprojects/AutoTrust-JEV-35B-mlx-3bit-mixed](https://huggingface.co/netprojects/AutoTrust-JEV-35B-mlx-3bit-mixed) | 17 GB | 17.6 GB | 224 / 231 | 0.012 / 0.056 | 99 ms |
 
 All three keep the **vision tower and the router gates in bf16**. The mixed builds put the routed experts (about 32 B of the 35 B parameters) at 4 or 3 bits and keep every other layer, including the decision head in `lm_head`, at 8 bits. Measured on a MacBook Pro M5 Max against the original bf16 weights; see [Verification](#verification).
 
@@ -31,7 +31,7 @@ Pick by memory: the 8-bit build for 48 GB Macs and up, 4-bit mixed for 32 GB, 3-
 ## Install
 
 ```bash
-pip install "git+https://github.com/internet-projects/jev35b-mlx"
+pip install "git+https://github.com/internet-projects/autotrust-jev35b-mlx"
 ```
 
 Requires an Apple Silicon Mac, Python 3.10+, `mlx` and `mlx-vlm` 0.7.6 or later (installed with the package).
@@ -41,7 +41,7 @@ Requires an Apple Silicon Mac, Python 3.10+, `mlx` and `mlx-vlm` 0.7.6 or later 
 ```python
 import jev_mlx
 
-jev = jev_mlx.load("netprojects/JEV-35B-mlx-4bit-mixed")     # a Hugging Face repo id or a local folder
+jev = jev_mlx.load("netprojects/AutoTrust-JEV-35B-mlx-4bit-mixed")     # a Hugging Face repo id or a local folder
 
 r = jev.decide("choice",
                state="Customer message: my card was charged twice for the same order.",
@@ -59,7 +59,7 @@ print(r["probabilities"][1])                     # P(true)
 ## Use as a server
 
 ```bash
-python -m jev_mlx serve netprojects/JEV-35B-mlx-4bit-mixed --port 8000
+python -m jev_mlx serve netprojects/AutoTrust-JEV-35B-mlx-4bit-mixed --port 8000
 
 curl localhost:8000/v1/decide -H 'Content-Type: application/json' -d '{
   "kind": "choice",
@@ -73,7 +73,7 @@ The response has `options`, `probabilities`, `choice`, `choice_index`, `usage` a
 One decision from the command line:
 
 ```bash
-python -m jev_mlx decide netprojects/JEV-35B-mlx-3bit-mixed --kind noul \
+python -m jev_mlx decide netprojects/AutoTrust-JEV-35B-mlx-3bit-mixed --kind noul \
   --state "Order 1182 arrived with a cracked screen." --question "Does the customer report damage?"
 ```
 
@@ -83,9 +83,9 @@ python -m jev_mlx decide netprojects/JEV-35B-mlx-3bit-mixed --kind noul \
 # 231 decisions from the JevBench public set (https://github.com/fstandhartinger/jevbench)
 python scripts/jevbench_to_requests.py jevbench/datasets/public/{easy,original,hard}.jsonl > requests.jsonl
 python scripts/convert.py autotrust/JEV-35B ./JEV-35B-bf16 bf16          # reference: the original weights, unquantized
-python scripts/check.py requests.jsonl ./JEV-35B-bf16 netprojects/JEV-35B-mlx-8bit netprojects/JEV-35B-mlx-4bit-mixed netprojects/JEV-35B-mlx-3bit-mixed
-python scripts/vision_check.py netprojects/JEV-35B-mlx-3bit-mixed        # two generated images, 4 questions
-python scripts/speed.py netprojects/JEV-35B-mlx-4bit-mixed requests.jsonl
+python scripts/check.py requests.jsonl ./JEV-35B-bf16 netprojects/AutoTrust-JEV-35B-mlx-8bit netprojects/AutoTrust-JEV-35B-mlx-4bit-mixed netprojects/AutoTrust-JEV-35B-mlx-3bit-mixed
+python scripts/vision_check.py netprojects/AutoTrust-JEV-35B-mlx-3bit-mixed        # two generated images, 4 questions
+python scripts/speed.py netprojects/AutoTrust-JEV-35B-mlx-4bit-mixed requests.jsonl
 ```
 
 `check.py` reports, for each build, how often its top answer matches the reference and the KL divergence between the two probability distributions. Our numbers are in [`results/results.json`](results/results.json). Every build answers the vision check 4/4.

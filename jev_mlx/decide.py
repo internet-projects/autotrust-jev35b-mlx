@@ -165,5 +165,5 @@ class Jev:
 
 
 def load(path_or_repo: str) -> Jev:
-    """jev = jev_mlx.load("netprojects/JEV-35B-mlx-4bit-mixed")  (a Hugging Face repo id or a local folder)"""
+    """jev = jev_mlx.load("netprojects/AutoTrust-JEV-35B-mlx-4bit-mixed")  (a Hugging Face repo id or a local folder)"""
     return Jev(path_or_repo)
